@@ -1,0 +1,9 @@
+spring:
+  application:
+    name: lawyer-ai-assistant
+
+  ai:
+    deepseek:
+      api-key: ${DEEPSEEK_API_KEY}
+      chat:
+        model: deepseek-chat
