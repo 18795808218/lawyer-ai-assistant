@@ -11,8 +11,13 @@ import com.quince.lawyeraiassistant.dto.LegalAnalysisRequest;
 import com.quince.lawyeraiassistant.dto.LegalAnalysisResponse;
 import com.quince.lawyeraiassistant.dto.MultiTurnChatResponse;
 import com.quince.lawyeraiassistant.dto.PromptInspectResponse;
+import com.quince.lawyeraiassistant.dto.request.ChatMemoryRequest;
+import com.quince.lawyeraiassistant.dto.response.ChatMemoryResponse;
+import com.quince.lawyeraiassistant.service.ChatMemoryService;
 import com.quince.lawyeraiassistant.service.ChatModelService;
 import com.quince.lawyeraiassistant.service.ChatService;
+
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/chat")
@@ -20,13 +25,16 @@ public class ChatController {
 
     private final ChatService chatService;
     private final ChatModelService chatModelService;
+    private final ChatMemoryService chatMemoryService;
 
     public ChatController(
             ChatService chatService,
-            ChatModelService chatModelService) {
+            ChatModelService chatModelService,
+            ChatMemoryService chatMemoryService) {
 
         this.chatService = chatService;
         this.chatModelService = chatModelService;
+        this.chatMemoryService = chatMemoryService;
     }
 
     @GetMapping("/client")
@@ -68,5 +76,12 @@ public class ChatController {
             @RequestBody LegalAnalysisRequest request) {
 
         return chatModelService.analyzeCase(request);
+    }
+
+    @PostMapping("/memory")
+    public ChatMemoryResponse chatMemory(
+            @Valid @RequestBody ChatMemoryRequest request) {
+
+        return chatMemoryService.chat(request);
     }
 }

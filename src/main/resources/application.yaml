@@ -6,4 +6,4 @@ spring:
     deepseek:
       api-key: ${DEEPSEEK_API_KEY}
       chat:
-        model: deepseek-chat
+        model: deepseek-v4-flash
