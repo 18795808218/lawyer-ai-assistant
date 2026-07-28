@@ -3,10 +3,29 @@ spring:
     name: lawyer-ai-assistant
 
   ai:
+    # 明确指定当前使用的模型实现
+    model:
+      chat: deepseek
+      embedding: ollama
+
+    # DeepSeek：负责聊天和答案生成
     deepseek:
       api-key: ${DEEPSEEK_API_KEY}
       chat:
         model: deepseek-v4-flash
+
+    # Ollama：负责本地 Embedding
+    ollama:
+      base-url: http://localhost:11434
+
+      init:
+        # 模型已通过 ollama pull bge-m3 手动下载，
+        # Spring Boot 启动时不再自动拉取
+        pull-model-strategy: never
+
+      embedding:
+        model: bge-m3
+        truncate: true
 
 app:
   rag:
@@ -38,3 +57,7 @@ app:
 
       # 过短的 Chunk 不保留
       min-chunk-size: 30
+
+    knowledge-base:
+      enabled: true
+      location: classpath:knowledge/
