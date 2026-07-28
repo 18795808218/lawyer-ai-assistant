@@ -61,3 +61,7 @@ app:
     knowledge-base:
       enabled: true
       location: classpath:knowledge/
+
+    retrieval:
+      top-k: 5
+      similarity-threshold: 0.0

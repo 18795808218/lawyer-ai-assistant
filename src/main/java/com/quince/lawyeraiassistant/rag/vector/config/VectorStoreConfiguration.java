@@ -7,8 +7,13 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import com.quince.lawyeraiassistant.rag.config.RetrievalProperties;
+
 @Configuration
-@EnableConfigurationProperties(KnowledgeBaseProperties.class)
+@EnableConfigurationProperties({
+        KnowledgeBaseProperties.class,
+        RetrievalProperties.class
+})
 public class VectorStoreConfiguration {
 
     @Bean
