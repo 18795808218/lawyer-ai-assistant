@@ -65,3 +65,7 @@ app:
     retrieval:
       top-k: 5
       similarity-threshold: 0.0
+
+logging:
+  level:
+    com.quince.lawyeraiassistant.advisor.LoggingAdvisorV2: DEBUG

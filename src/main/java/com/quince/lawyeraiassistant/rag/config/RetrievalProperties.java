@@ -1,13 +1,21 @@
 package com.quince.lawyeraiassistant.rag.config;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.validation.annotation.Validated;
 
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Min;
+
+@Validated
 @ConfigurationProperties(prefix = "app.rag.retrieval")
 public record RetrievalProperties(
 
-                int topK,
+        @Min(1) 
+        int topK,
 
-                double similarityThreshold
+        @DecimalMin("0.0") @DecimalMax("1.0") 
+        double similarityThreshold
 
 ) {
 }
