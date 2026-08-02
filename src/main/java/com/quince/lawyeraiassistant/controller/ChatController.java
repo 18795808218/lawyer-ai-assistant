@@ -20,7 +20,7 @@ import com.quince.lawyeraiassistant.service.ChatService;
 import jakarta.validation.Valid;
 
 @RestController
-@RequestMapping("/api/chat")
+@RequestMapping("/api/playground/chat")
 public class ChatController {
 
     private final ChatService chatService;
