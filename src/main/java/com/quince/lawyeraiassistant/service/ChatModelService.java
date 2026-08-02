@@ -20,6 +20,7 @@ import com.quince.lawyeraiassistant.dto.PromptInspectResponse;
 import com.quince.lawyeraiassistant.dto.PromptMessageResponse;
 import com.quince.lawyeraiassistant.prompt.PromptPaths;
 import com.quince.lawyeraiassistant.prompt.PromptResourceLoader;
+import com.quince.lawyeraiassistant.prompt.definition.PromptDefinition;
 import com.quince.lawyeraiassistant.dto.LegalAnalysisRequest;
 import com.quince.lawyeraiassistant.dto.LegalAnalysisResponse;
 
@@ -37,7 +38,7 @@ public class ChatModelService {
         this.chatModel = chatModel;
 
         this.lawyerSystemPrompt = promptResourceLoader.load(
-                PromptPaths.LAWYER_SYSTEM);
+                PromptDefinition.LAWYER_SYSTEM.getLocation());
 
         Resource caseAnalysisResource = promptResourceLoader.getResource(
                 PromptPaths.CASE_ANALYSIS);
