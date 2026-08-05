@@ -2,6 +2,8 @@ package com.quince.lawyeraiassistant.rag.service;
 
 import com.quince.lawyeraiassistant.prompt.builder.LegalPromptBuilder;
 import com.quince.lawyeraiassistant.prompt.model.PromptContext;
+import com.quince.lawyeraiassistant.retrieval.model.RetrieverContext;
+import com.quince.lawyeraiassistant.retrieval.orchestration.RetrievalOrchestrator;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -13,138 +15,176 @@ import java.util.Objects;
  * 法律 RAG 问答服务。
  *
  * <p>
- * 当前职责：
+ * 正式调用链：
  * </p>
  *
- * <ul>
- * <li>接收用户问题和可选会话编号</li>
- * <li>创建 PromptContext</li>
- * <li>委托 LegalPromptBuilder 构建 Prompt</li>
- * <li>调用 ragChatClient 获取模型回答</li>
- * </ul>
+ * <pre>
+ * question
+ *      ↓
+ * RetrievalOrchestrator
+ *      ↓
+ * QueryPipeline
+ *      ↓
+ * RetrieverPipeline
+ *      ↓
+ * List&lt;Document&gt;
+ *      ↓
+ * PromptContext.knowledge
+ *      ↓
+ * LegalPromptBuilder
+ *      ↓
+ * ragChatClient
+ *      ↓
+ * LLM
+ * </pre>
  *
  * <p>
- * 本类不负责：
+ * ragChatClient 不再包含 RetrievalAugmentationAdvisor，
+ * 避免同一次请求重复检索和重复注入知识。
  * </p>
- *
- * <ul>
- * <li>读取 Prompt 文件</li>
- * <li>渲染 PromptTemplate</li>
- * <li>格式化 RAG Document</li>
- * <li>拼接 SystemMessage 和 UserMessage</li>
- * </ul>
  */
 @Service
 public class RagChatService {
 
-    private static final String DEFAULT_LEGAL_DOMAIN = "劳动法";
+        private static final String DEFAULT_LEGAL_DOMAIN = "劳动法";
 
-    private final ChatClient ragChatClient;
+        private final ChatClient ragChatClient;
 
-    private final LegalPromptBuilder legalPromptBuilder;
+        private final RetrievalOrchestrator retrievalOrchestrator;
 
-    public RagChatService(
-            @Qualifier("ragChatClient") ChatClient ragChatClient,
-            LegalPromptBuilder legalPromptBuilder) {
-        this.ragChatClient = Objects.requireNonNull(
-                ragChatClient,
-                "ragChatClient must not be null");
+        private final LegalPromptBuilder legalPromptBuilder;
 
-        this.legalPromptBuilder = Objects.requireNonNull(
-                legalPromptBuilder,
-                "legalPromptBuilder must not be null");
-    }
+        public RagChatService(
+                        @Qualifier("ragChatClient") ChatClient ragChatClient,
+                        RetrievalOrchestrator retrievalOrchestrator,
+                        LegalPromptBuilder legalPromptBuilder) {
 
-    /**
-     * 执行无会话编号的法律问答。
-     *
-     * <p>
-     * 保留该方法是为了兼容当前 Controller，
-     * 调用方暂时不需要传递 conversationId。
-     * </p>
-     *
-     * @param question 用户问题
-     * @return 模型回答
-     */
-    public String chat(String question) {
-        return chat(question, null);
-    }
+                this.ragChatClient = Objects.requireNonNull(
+                                ragChatClient,
+                                "ragChatClient must not be null");
 
-    /**
-     * 执行带会话编号的法律问答。
-     *
-     * <p>
-     * 当前 conversationId 会进入 PromptContext。
-     * 后续接入 ChatMemory 和 AI Trace 时可直接复用。
-     * </p>
-     *
-     * @param question       用户问题
-     * @param conversationId 会话编号，可以为空
-     * @return 模型回答
-     */
-    public String chat(
-            String question,
-            String conversationId) {
-        PromptContext context = createPromptContext(
-                question,
-                conversationId);
+                this.retrievalOrchestrator = Objects.requireNonNull(
+                                retrievalOrchestrator,
+                                "retrievalOrchestrator must not be null");
 
-        Prompt prompt = legalPromptBuilder.build(context);
-
-        return ragChatClient
-                .prompt(prompt)
-                .call()
-                .content();
-    }
-
-    /**
-     * 创建一次法律问答所需要的 PromptContext。
-     */
-    private PromptContext createPromptContext(
-            String question,
-            String conversationId) {
-        validateQuestion(question);
-
-        return PromptContext.builder()
-                .question(question)
-                .conversationId(
-                        normalizeConversationId(
-                                conversationId))
-                .variable(
-                        "legalDomain",
-                        DEFAULT_LEGAL_DOMAIN)
-                .build();
-    }
-
-    /**
-     * 校验用户问题。
-     */
-    private void validateQuestion(String question) {
-        Objects.requireNonNull(
-                question,
-                "Question must not be null");
-
-        if (question.isBlank()) {
-            throw new IllegalArgumentException(
-                    "Question must not be blank");
-        }
-    }
-
-    /**
-     * 将空白会话编号统一转换为 null。
-     *
-     * <p>
-     * 避免系统中同时出现 null、空字符串和纯空格三种
-     * “没有会话编号”的状态。
-     * </p>
-     */
-    private String normalizeConversationId(
-            String conversationId) {
-        if (conversationId == null
-                || conversationId.isBlank()) {
-            return null;
+                this.legalPromptBuilder = Objects.requireNonNull(
+                                legalPromptBuilder,
+                                "legalPromptBuilder must not be null");
         }
 
-        return conversationId.trim();
-    }
+        /**
+         * 执行无会话编号的法律问答。
+         */
+        public String chat(String question) {
+                return chat(question, null);
+        }
+
+        /**
+         * 执行完整法律 RAG 问答。
+         *
+         * @param question       用户原始问题
+         * @param conversationId 可选会话编号
+         * @return 模型回答
+         */
+        public String chat(
+                        String question,
+                        String conversationId) {
+
+                validateQuestion(question);
+
+                /*
+                 * QueryPipeline + RetrieverPipeline。
+                 *
+                 * Retriever 使用 effectiveQuery，
+                 * QueryContext 中仍然保留原始 question。
+                 */
+                RetrieverContext retrievalContext = retrievalOrchestrator.retrieve(
+                                question,
+                                normalizeConversationId(
+                                                conversationId));
+
+                /*
+                 * 将检索得到的 Document 注入 PromptContext。
+                 */
+                PromptContext promptContext = createPromptContext(
+                                retrievalContext);
+
+                Prompt prompt = legalPromptBuilder.build(
+                                promptContext);
+
+                /*
+                 * ragChatClient 已不再包含
+                 * RetrievalAugmentationAdvisor。
+                 */
+                return ragChatClient
+                                .prompt(prompt)
+                                .call()
+                                .content();
+        }
+
+        /**
+         * 使用 Retriever Pipeline 的结果创建 PromptContext。
+         */
+        private PromptContext createPromptContext(
+                        RetrieverContext retrievalContext) {
+
+                Objects.requireNonNull(
+                                retrievalContext,
+                                "RetrieverContext must not be null");
+
+                return PromptContext.builder()
+                                /*
+                                 * 最终回答必须使用用户原始问题，
+                                 * 不能使用 effectiveQuery。
+                                 */
+                                .question(
+                                                retrievalContext
+                                                                .getQueryContext()
+                                                                .getQuestion())
+                                .conversationId(
+                                                retrievalContext
+                                                                .getQueryContext()
+                                                                .getConversationId())
+                                .variable(
+                                                "legalDomain",
+                                                DEFAULT_LEGAL_DOMAIN)
+                                /*
+                                 * PromptContext 使用 @Singular("knowledgeDocument")，
+                                 * Lombok 会生成 knowledge(Collection) 方法。
+                                 */
+                                .knowledge(
+                                                retrievalContext
+                                                                .getDocuments())
+                                .build();
+        }
+
+        /**
+         * 保留当前 Service 的参数校验契约。
+         */
+        private void validateQuestion(
+                        String question) {
+
+                Objects.requireNonNull(
+                                question,
+                                "Question must not be null");
+
+                if (question.isBlank()) {
+                        throw new IllegalArgumentException(
+                                        "Question must not be blank");
+                }
+        }
+
+        /**
+         * 将空白 conversationId 统一转换为 null。
+         */
+        private String normalizeConversationId(
+                        String conversationId) {
+
+                if (conversationId == null
+                                || conversationId.isBlank()) {
+                        return null;
+                }
+
+                return conversationId.trim();
+        }
 }
