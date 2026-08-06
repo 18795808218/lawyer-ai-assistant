@@ -1,6 +1,6 @@
 package com.quince.lawyeraiassistant.rag.service;
 
-import com.quince.lawyeraiassistant.prompt.builder.LegalPromptBuilder;
+import com.quince.lawyeraiassistant.prompt.builder.PromptBuilder;
 import com.quince.lawyeraiassistant.prompt.model.PromptContext;
 import com.quince.lawyeraiassistant.query.model.QueryContext;
 import com.quince.lawyeraiassistant.retrieval.model.RetrieverContext;
@@ -33,7 +33,7 @@ class RagChatServiceTest {
 
         private RetrievalOrchestrator retrievalOrchestrator;
 
-        private LegalPromptBuilder legalPromptBuilder;
+        private PromptBuilder promptBuilder;
 
         private ChatClient.ChatClientRequestSpec requestSpec;
 
@@ -49,7 +49,7 @@ class RagChatServiceTest {
 
                 retrievalOrchestrator = mock(RetrievalOrchestrator.class);
 
-                legalPromptBuilder = mock(LegalPromptBuilder.class);
+                promptBuilder = mock(PromptBuilder.class);
 
                 requestSpec = mock(
                                 ChatClient.ChatClientRequestSpec.class);
@@ -62,7 +62,7 @@ class RagChatServiceTest {
                 ragChatService = new RagChatService(
                                 ragChatClient,
                                 retrievalOrchestrator,
-                                legalPromptBuilder);
+                                promptBuilder);
         }
 
         @Test
@@ -96,8 +96,8 @@ class RagChatServiceTest {
                                                 null);
 
                 verify(
-                                legalPromptBuilder,
-                                times(1)).build(
+                                promptBuilder,
+                                times(1)).buildLegal(
                                                 any(PromptContext.class));
 
                 verify(
@@ -137,7 +137,7 @@ class RagChatServiceTest {
                                 "conversation-001");
 
                 verify(
-                                legalPromptBuilder).build(
+                                promptBuilder).buildLegal(
                                                 contextCaptor.capture());
 
                 PromptContext context = contextCaptor.getValue();
@@ -186,7 +186,7 @@ class RagChatServiceTest {
                                 "老板把我开了合法吗？");
 
                 verify(
-                                legalPromptBuilder).build(
+                                promptBuilder).buildLegal(
                                                 contextCaptor.capture());
 
                 assertEquals(
@@ -239,7 +239,7 @@ class RagChatServiceTest {
                                                 null);
 
                 verify(
-                                legalPromptBuilder).build(
+                                promptBuilder).buildLegal(
                                                 contextCaptor.capture());
 
                 assertNull(
@@ -271,7 +271,7 @@ class RagChatServiceTest {
                                 "知识库中不存在的问题");
 
                 verify(
-                                legalPromptBuilder).build(
+                                promptBuilder).buildLegal(
                                                 contextCaptor.capture());
 
                 assertFalse(
@@ -307,8 +307,8 @@ class RagChatServiceTest {
                                                 any());
 
                 verify(
-                                legalPromptBuilder,
-                                never()).build(any());
+                                promptBuilder,
+                                never()).buildLegal(any());
 
                 verify(
                                 ragChatClient,
@@ -333,8 +333,8 @@ class RagChatServiceTest {
                                                 any());
 
                 verify(
-                                legalPromptBuilder,
-                                never()).build(any());
+                                promptBuilder,
+                                never()).buildLegal(any());
 
                 verify(
                                 ragChatClient,
@@ -363,8 +363,8 @@ class RagChatServiceTest {
                                 actualException);
 
                 verify(
-                                legalPromptBuilder,
-                                never()).build(any());
+                                promptBuilder,
+                                never()).buildLegal(any());
 
                 verify(
                                 ragChatClient,
@@ -385,7 +385,7 @@ class RagChatServiceTest {
                                 "Prompt build failed");
 
                 when(
-                                legalPromptBuilder.build(
+                                promptBuilder.buildLegal(
                                                 any(PromptContext.class)))
                                 .thenThrow(expectedException);
 
@@ -411,7 +411,7 @@ class RagChatServiceTest {
                                 () -> new RagChatService(
                                                 null,
                                                 retrievalOrchestrator,
-                                                legalPromptBuilder));
+                                                promptBuilder));
 
                 assertEquals(
                                 "ragChatClient must not be null",
@@ -422,7 +422,7 @@ class RagChatServiceTest {
                                 () -> new RagChatService(
                                                 ragChatClient,
                                                 null,
-                                                legalPromptBuilder));
+                                                promptBuilder));
 
                 assertEquals(
                                 "retrievalOrchestrator must not be null",
@@ -436,7 +436,7 @@ class RagChatServiceTest {
                                                 null));
 
                 assertEquals(
-                                "legalPromptBuilder must not be null",
+                                "promptBuilder must not be null",
                                 builderException.getMessage());
         }
 
@@ -473,7 +473,7 @@ class RagChatServiceTest {
                         String responseContent) {
 
                 when(
-                                legalPromptBuilder.build(
+                                promptBuilder.buildLegal(
                                                 any(PromptContext.class)))
                                 .thenReturn(prompt);
 

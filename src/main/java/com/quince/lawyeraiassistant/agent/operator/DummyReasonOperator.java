@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component;
  * 不调用 LLM，不执行真实推理。
  * </p>
  */
-@Component
+//@Component
 @Order(200)
 public class DummyReasonOperator
         implements AgentOperator {

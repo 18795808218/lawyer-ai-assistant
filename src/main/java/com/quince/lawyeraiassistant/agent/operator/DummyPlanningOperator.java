@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
  * 后续将替换为真正的 Planner。
  * </p>
  */
-@Component
+//@Component
 @Order(300)
 public class DummyPlanningOperator
         implements AgentOperator {

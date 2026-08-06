@@ -21,9 +21,23 @@ public interface PromptFactory {
     PromptFragment get(String name);
 
     /**
-     * 获取律师助手的基础系统 Prompt。
+     * 获取律师助手基础系统 Prompt。
      *
      * @return 律师系统 Prompt
      */
     PromptFragment lawyerSystem();
+
+    /**
+     * 获取 Agent Reason Prompt。
+     *
+     * @return Agent Reason Prompt
+     */
+    PromptFragment agentReason();
+
+    /**
+     * 获取 Agent Planning Prompt。
+     *
+     * @return Agent Planning Prompt
+     */
+    PromptFragment agentPlanning();
 }

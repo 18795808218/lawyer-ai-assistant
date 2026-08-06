@@ -7,312 +7,662 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class AgentContextTest {
 
-    @Test
-    void shouldCreateInitialContextFromGoal() {
-        AgentContext context = AgentContext.from(
-                "分析劳动合同并生成律师意见书");
+        @Test
+        void shouldCreateInitialContextFromGoal() {
+                AgentContext context = AgentContext.from(
+                                "分析劳动合同并生成律师意见书");
 
-        assertEquals(
-                "分析劳动合同并生成律师意见书",
-                context.getGoal());
+                assertEquals(
+                                "分析劳动合同并生成律师意见书",
+                                context.getGoal());
 
-        assertEquals(
-                AgentStatus.CREATED,
-                context.getStatus());
+                assertEquals(
+                                AgentStatus.CREATED,
+                                context.getStatus());
 
-        assertTrue(
-                context.getExecutionLogs()
-                        .isEmpty());
+                /*
+                 * Reason 尚未执行，因此 ReasonResult 为 null。
+                 */
+                assertNull(
+                                context.getReasonResult());
 
-        assertFalse(context.isRunning());
-        assertFalse(context.isFinished());
-        assertFalse(context.isFailed());
-        assertFalse(context.hasExecutionLogs());
+                assertFalse(
+                                context.hasReasonResult());
 
-        assertEquals(
-                0,
-                context.executionLogCount());
-    }
+                /*
+                 * AgentPlan 使用空对象设计，不使用 null。
+                 */
+                assertNotNull(
+                                context.getAgentPlan());
 
-    @Test
-    void shouldTrimGoal() {
-        AgentContext context = AgentContext.from(
-                "  分析劳动合同  ");
+                assertFalse(
+                                context.hasAgentPlan());
 
-        assertEquals(
-                "分析劳动合同",
-                context.getGoal());
-    }
+                assertFalse(
+                                context.getAgentPlan()
+                                                .hasTasks());
 
-    @Test
-    void shouldDefaultNullStatusToCreated() {
-        AgentContext context = AgentContext.builder()
-                .goal("测试目标")
-                .status(null)
-                .build();
+                assertEquals(
+                                0,
+                                context.getAgentPlan()
+                                                .taskCount());
 
-        assertEquals(
-                AgentStatus.CREATED,
-                context.getStatus());
-    }
+                assertTrue(
+                                context.getExecutionLogs()
+                                                .isEmpty());
 
-    @Test
-    void shouldNormalizeNullLogsToEmptyList() {
-        AgentContext context = AgentContext.builder()
-                .goal("测试目标")
-                .executionLogs(null)
-                .build();
+                assertFalse(
+                                context.isRunning());
 
-        assertTrue(
-                context.getExecutionLogs()
-                        .isEmpty());
-    }
+                assertFalse(
+                                context.isFinished());
 
-    @Test
-    void shouldCreateRunningContextWithToBuilder() {
-        AgentContext originalContext = AgentContext.from(
-                "分析劳动合同");
+                assertFalse(
+                                context.isFailed());
 
-        AgentContext runningContext = originalContext.toBuilder()
-                .status(
-                        AgentStatus.RUNNING)
-                .build();
+                assertFalse(
+                                context.hasExecutionLogs());
 
-        assertNotSame(
-                originalContext,
-                runningContext);
+                assertEquals(
+                                0,
+                                context.executionLogCount());
+        }
 
-        assertEquals(
-                AgentStatus.CREATED,
-                originalContext.getStatus());
+        @Test
+        void shouldTrimGoal() {
+                AgentContext context = AgentContext.from(
+                                "  分析劳动合同  ");
 
-        assertEquals(
-                AgentStatus.RUNNING,
-                runningContext.getStatus());
+                assertEquals(
+                                "分析劳动合同",
+                                context.getGoal());
+        }
 
-        assertTrue(
-                runningContext.isRunning());
+        @Test
+        void shouldDefaultNullStatusToCreated() {
+                AgentContext context = AgentContext.builder()
+                                .goal("测试目标")
+                                .status(null)
+                                .build();
 
-        assertEquals(
-                originalContext.getGoal(),
-                runningContext.getGoal());
-    }
+                assertEquals(
+                                AgentStatus.CREATED,
+                                context.getStatus());
+        }
 
-    @Test
-    void shouldAppendExecutionLogWithoutModifyingOriginal() {
-        AgentContext originalContext = AgentContext.from(
-                "分析劳动合同");
+        @Test
+        void shouldNormalizeNullLogsToEmptyList() {
+                AgentContext context = AgentContext.builder()
+                                .goal("测试目标")
+                                .executionLogs(null)
+                                .build();
 
-        AgentContext updatedContext = originalContext.appendExecutionLog(
-                "  Reason completed  ");
+                assertNotNull(
+                                context.getExecutionLogs());
 
-        assertNotSame(
-                originalContext,
-                updatedContext);
+                assertTrue(
+                                context.getExecutionLogs()
+                                                .isEmpty());
+        }
 
-        assertTrue(
-                originalContext
-                        .getExecutionLogs()
-                        .isEmpty());
+        @Test
+        void shouldNormalizeNullAgentPlanToEmptyPlan() {
+                AgentContext context = AgentContext.builder()
+                                .goal("测试目标")
+                                .agentPlan(null)
+                                .build();
 
-        assertEquals(
-                List.of(
-                        "Reason completed"),
-                updatedContext
-                        .getExecutionLogs());
+                assertNotNull(
+                                context.getAgentPlan());
 
-        assertTrue(
-                updatedContext.hasExecutionLogs());
+                assertFalse(
+                                context.hasAgentPlan());
 
-        assertEquals(
-                1,
-                updatedContext
-                        .executionLogCount());
-    }
+                assertTrue(
+                                context.getAgentPlan()
+                                                .getTasks()
+                                                .isEmpty());
+        }
 
-    @Test
-    void shouldPreserveExistingLogsWhenAppending() {
-        AgentContext context = AgentContext.builder()
-                .goal("生成律师意见书")
-                .executionLogs(
-                        List.of(
-                                "Reason completed"))
-                .build();
+        @Test
+        void shouldCreateRunningContextWithToBuilder() {
+                AgentContext originalContext = AgentContext.from(
+                                "分析劳动合同");
 
-        AgentContext result = context.appendExecutionLog(
-                "Planning completed");
+                AgentContext runningContext = originalContext.toBuilder()
+                                .status(
+                                                AgentStatus.RUNNING)
+                                .build();
 
-        assertEquals(
-                List.of(
-                        "Reason completed",
-                        "Planning completed"),
-                result.getExecutionLogs());
-    }
+                assertNotSame(
+                                originalContext,
+                                runningContext);
 
-    @Test
-    void shouldCreateDefensiveCopyOfExecutionLogs() {
-        List<String> mutableLogs = new ArrayList<>();
+                assertEquals(
+                                AgentStatus.CREATED,
+                                originalContext.getStatus());
 
-        mutableLogs.add(
-                "Reason completed");
+                assertEquals(
+                                AgentStatus.RUNNING,
+                                runningContext.getStatus());
 
-        AgentContext context = AgentContext.builder()
-                .goal("测试目标")
-                .executionLogs(mutableLogs)
-                .build();
+                assertTrue(
+                                runningContext.isRunning());
 
-        mutableLogs.clear();
+                assertEquals(
+                                originalContext.getGoal(),
+                                runningContext.getGoal());
 
-        assertEquals(
-                List.of(
-                        "Reason completed"),
-                context.getExecutionLogs());
-    }
+                assertSame(
+                                originalContext.getAgentPlan(),
+                                runningContext.getAgentPlan());
+        }
 
-    @Test
-    void shouldExposeUnmodifiableExecutionLogs() {
-        AgentContext context = AgentContext.builder()
-                .goal("测试目标")
-                .executionLogs(
-                        List.of(
-                                "Reason completed"))
-                .build();
+        @Test
+        void shouldAddReasonResultWithoutModifyingOriginalContext() {
+                AgentContext originalContext = AgentContext.from(
+                                "分析劳动合同");
 
-        assertThrows(
-                UnsupportedOperationException.class,
-                () -> context
-                        .getExecutionLogs()
-                        .add(
-                                "Illegal log"));
-    }
+                ReasonResult reasonResult = ReasonResult.from(
+                                "用户希望分析劳动合同并识别法律风险");
 
-    @Test
-    void shouldIdentifyFinishedStatus() {
-        AgentContext context = AgentContext.builder()
-                .goal("测试目标")
-                .status(
-                        AgentStatus.FINISHED)
-                .build();
+                AgentContext updatedContext = originalContext.withReasonResult(
+                                reasonResult);
 
-        assertTrue(context.isFinished());
-        assertFalse(context.isRunning());
-        assertFalse(context.isFailed());
-    }
+                assertNotSame(
+                                originalContext,
+                                updatedContext);
 
-    @Test
-    void shouldIdentifyFailedStatus() {
-        AgentContext context = AgentContext.builder()
-                .goal("测试目标")
-                .status(
-                        AgentStatus.FAILED)
-                .build();
+                assertNull(
+                                originalContext.getReasonResult());
 
-        assertTrue(context.isFailed());
-        assertFalse(context.isRunning());
-        assertFalse(context.isFinished());
-    }
+                assertFalse(
+                                originalContext.hasReasonResult());
 
-    @Test
-    void shouldRejectNullGoal() {
-        NullPointerException exception = assertThrows(
-                NullPointerException.class,
-                () -> AgentContext.from(null));
+                assertSame(
+                                reasonResult,
+                                updatedContext.getReasonResult());
 
-        assertEquals(
-                "Goal must not be null",
-                exception.getMessage());
-    }
+                assertTrue(
+                                updatedContext.hasReasonResult());
 
-    @Test
-    void shouldRejectBlankGoal() {
-        IllegalArgumentException exception = assertThrows(
-                IllegalArgumentException.class,
-                () -> AgentContext.from("   "));
+                assertEquals(
+                                originalContext.getGoal(),
+                                updatedContext.getGoal());
 
-        assertEquals(
-                "Goal must not be blank",
-                exception.getMessage());
-    }
+                assertEquals(
+                                originalContext.getStatus(),
+                                updatedContext.getStatus());
 
-    @Test
-    void shouldRejectNullExecutionLog() {
-        AgentContext context = AgentContext.from(
-                "测试目标");
+                assertSame(
+                                originalContext.getAgentPlan(),
+                                updatedContext.getAgentPlan());
 
-        NullPointerException exception = assertThrows(
-                NullPointerException.class,
-                () -> context
-                        .appendExecutionLog(
-                                null));
+                assertEquals(
+                                originalContext.getExecutionLogs(),
+                                updatedContext.getExecutionLogs());
+        }
 
-        assertEquals(
-                "Execution log must not be null",
-                exception.getMessage());
-    }
+        @Test
+        void shouldRejectNullReasonResultWhenUsingHelperMethod() {
+                AgentContext context = AgentContext.from(
+                                "分析劳动合同");
 
-    @Test
-    void shouldRejectBlankExecutionLog() {
-        AgentContext context = AgentContext.from(
-                "测试目标");
+                NullPointerException exception = assertThrows(
+                                NullPointerException.class,
+                                () -> context.withReasonResult(null));
 
-        IllegalArgumentException exception = assertThrows(
-                IllegalArgumentException.class,
-                () -> context
-                        .appendExecutionLog(
-                                "   "));
+                assertEquals(
+                                "ReasonResult must not be null",
+                                exception.getMessage());
+        }
 
-        assertEquals(
-                "Execution log must not be blank",
-                exception.getMessage());
-    }
+        @Test
+        void shouldAddAgentPlanWithoutModifyingOriginalContext() {
+                AgentContext originalContext = AgentContext.from(
+                                "分析劳动合同");
 
-    @Test
-    void shouldRejectNullElementInExecutionLogs() {
-        List<String> logs = new ArrayList<>();
+                AgentPlan agentPlan = AgentPlan.from(
+                                List.of(
+                                                AgentTask.pending(
+                                                                "task-1",
+                                                                "读取劳动合同"),
+                                                AgentTask.pending(
+                                                                "task-2",
+                                                                "识别法律风险")));
 
-        logs.add(
-                "Reason completed");
+                AgentContext updatedContext = originalContext.withAgentPlan(
+                                agentPlan);
 
-        logs.add(null);
+                assertNotSame(
+                                originalContext,
+                                updatedContext);
 
-        assertThrows(
-                NullPointerException.class,
-                () -> AgentContext.builder()
-                        .goal("测试目标")
-                        .executionLogs(logs)
-                        .build());
-    }
+                /*
+                 * 原始 Context 仍然保持空计划。
+                 */
+                assertFalse(
+                                originalContext.hasAgentPlan());
 
-    @Test
-    void shouldSupportEqualsAndHashCode() {
-        AgentContext first = AgentContext.builder()
-                .goal("分析劳动合同")
-                .status(
-                        AgentStatus.RUNNING)
-                .executionLogs(
-                        List.of(
-                                "Reason completed"))
-                .build();
+                assertNotNull(
+                                originalContext.getAgentPlan());
 
-        AgentContext second = AgentContext.builder()
-                .goal("分析劳动合同")
-                .status(
-                        AgentStatus.RUNNING)
-                .executionLogs(
-                        List.of(
-                                "Reason completed"))
-                .build();
+                assertTrue(
+                                originalContext.getAgentPlan()
+                                                .getTasks()
+                                                .isEmpty());
 
-        assertEquals(first, second);
+                /*
+                 * 新 Context 包含真正的 Planning 结果。
+                 */
+                assertTrue(
+                                updatedContext.hasAgentPlan());
 
-        assertEquals(
-                first.hashCode(),
-                second.hashCode());
-    }
+                assertSame(
+                                agentPlan,
+                                updatedContext.getAgentPlan());
+
+                assertEquals(
+                                2,
+                                updatedContext.getAgentPlan()
+                                                .taskCount());
+
+                assertEquals(
+                                originalContext.getGoal(),
+                                updatedContext.getGoal());
+
+                assertEquals(
+                                originalContext.getStatus(),
+                                updatedContext.getStatus());
+
+                assertEquals(
+                                originalContext.getReasonResult(),
+                                updatedContext.getReasonResult());
+
+                assertEquals(
+                                originalContext.getExecutionLogs(),
+                                updatedContext.getExecutionLogs());
+        }
+
+        @Test
+        void shouldRejectNullAgentPlanWhenUsingHelperMethod() {
+                AgentContext context = AgentContext.from(
+                                "分析劳动合同");
+
+                NullPointerException exception = assertThrows(
+                                NullPointerException.class,
+                                () -> context.withAgentPlan(null));
+
+                assertEquals(
+                                "AgentPlan must not be null",
+                                exception.getMessage());
+        }
+
+        @Test
+        void shouldTreatEmptyAgentPlanAsNoPlan() {
+                AgentContext context = AgentContext.from(
+                                "分析劳动合同")
+                                .withAgentPlan(
+                                                AgentPlan.empty());
+
+                assertNotNull(
+                                context.getAgentPlan());
+
+                assertFalse(
+                                context.hasAgentPlan());
+
+                assertEquals(
+                                0,
+                                context.getAgentPlan()
+                                                .taskCount());
+        }
+
+        @Test
+        void shouldPreserveReasonResultWhenAddingAgentPlan() {
+                ReasonResult reasonResult = ReasonResult.from(
+                                "用户希望生成律师意见书");
+
+                AgentPlan agentPlan = AgentPlan.from(
+                                List.of(
+                                                AgentTask.pending(
+                                                                "task-1",
+                                                                "读取劳动合同")));
+
+                AgentContext context = AgentContext.from(
+                                "分析劳动合同")
+                                .withReasonResult(
+                                                reasonResult);
+
+                AgentContext updatedContext = context.withAgentPlan(
+                                agentPlan);
+
+                assertSame(
+                                reasonResult,
+                                updatedContext.getReasonResult());
+
+                assertSame(
+                                agentPlan,
+                                updatedContext.getAgentPlan());
+
+                assertTrue(
+                                updatedContext.hasReasonResult());
+
+                assertTrue(
+                                updatedContext.hasAgentPlan());
+        }
+
+        @Test
+        void shouldPreserveAgentPlanWhenAddingReasonResult() {
+                AgentPlan agentPlan = AgentPlan.from(
+                                List.of(
+                                                AgentTask.pending(
+                                                                "task-1",
+                                                                "读取劳动合同")));
+
+                ReasonResult reasonResult = ReasonResult.from(
+                                "用户希望分析劳动合同");
+
+                AgentContext context = AgentContext.from(
+                                "分析劳动合同")
+                                .withAgentPlan(
+                                                agentPlan);
+
+                AgentContext updatedContext = context.withReasonResult(
+                                reasonResult);
+
+                assertSame(
+                                agentPlan,
+                                updatedContext.getAgentPlan());
+
+                assertSame(
+                                reasonResult,
+                                updatedContext.getReasonResult());
+        }
+
+        @Test
+        void shouldPreserveReasonResultAndAgentPlanWhenAppendingLog() {
+                ReasonResult reasonResult = ReasonResult.from(
+                                "用户希望生成律师意见书");
+
+                AgentPlan agentPlan = AgentPlan.from(
+                                List.of(
+                                                AgentTask.pending(
+                                                                "task-1",
+                                                                "读取劳动合同")));
+
+                AgentContext context = AgentContext.from(
+                                "分析劳动合同")
+                                .withReasonResult(
+                                                reasonResult)
+                                .withAgentPlan(
+                                                agentPlan);
+
+                AgentContext updatedContext = context.appendExecutionLog(
+                                "Planning completed");
+
+                assertSame(
+                                reasonResult,
+                                updatedContext.getReasonResult());
+
+                assertSame(
+                                agentPlan,
+                                updatedContext.getAgentPlan());
+
+                assertEquals(
+                                List.of(
+                                                "Planning completed"),
+                                updatedContext.getExecutionLogs());
+        }
+
+        @Test
+        void shouldAppendExecutionLogWithoutModifyingOriginal() {
+                AgentContext originalContext = AgentContext.from(
+                                "分析劳动合同");
+
+                AgentContext updatedContext = originalContext.appendExecutionLog(
+                                "  Reason completed  ");
+
+                assertNotSame(
+                                originalContext,
+                                updatedContext);
+
+                assertTrue(
+                                originalContext.getExecutionLogs()
+                                                .isEmpty());
+
+                assertEquals(
+                                List.of(
+                                                "Reason completed"),
+                                updatedContext.getExecutionLogs());
+
+                assertTrue(
+                                updatedContext.hasExecutionLogs());
+
+                assertEquals(
+                                1,
+                                updatedContext.executionLogCount());
+        }
+
+        @Test
+        void shouldPreserveExistingLogsWhenAppending() {
+                AgentContext context = AgentContext.builder()
+                                .goal("生成律师意见书")
+                                .executionLogs(
+                                                List.of(
+                                                                "Reason completed"))
+                                .build();
+
+                AgentContext result = context.appendExecutionLog(
+                                "Planning completed");
+
+                assertEquals(
+                                List.of(
+                                                "Reason completed",
+                                                "Planning completed"),
+                                result.getExecutionLogs());
+        }
+
+        @Test
+        void shouldCreateDefensiveCopyOfExecutionLogs() {
+                List<String> mutableLogs = new ArrayList<>();
+
+                mutableLogs.add(
+                                "Reason completed");
+
+                AgentContext context = AgentContext.builder()
+                                .goal("测试目标")
+                                .executionLogs(
+                                                mutableLogs)
+                                .build();
+
+                mutableLogs.clear();
+
+                assertEquals(
+                                List.of(
+                                                "Reason completed"),
+                                context.getExecutionLogs());
+        }
+
+        @Test
+        void shouldExposeUnmodifiableExecutionLogs() {
+                AgentContext context = AgentContext.builder()
+                                .goal("测试目标")
+                                .executionLogs(
+                                                List.of(
+                                                                "Reason completed"))
+                                .build();
+
+                assertThrows(
+                                UnsupportedOperationException.class,
+                                () -> context.getExecutionLogs()
+                                                .add(
+                                                                "Illegal log"));
+        }
+
+        @Test
+        void shouldIdentifyFinishedStatus() {
+                AgentContext context = AgentContext.builder()
+                                .goal("测试目标")
+                                .status(
+                                                AgentStatus.FINISHED)
+                                .build();
+
+                assertTrue(
+                                context.isFinished());
+
+                assertFalse(
+                                context.isRunning());
+
+                assertFalse(
+                                context.isFailed());
+        }
+
+        @Test
+        void shouldIdentifyFailedStatus() {
+                AgentContext context = AgentContext.builder()
+                                .goal("测试目标")
+                                .status(
+                                                AgentStatus.FAILED)
+                                .build();
+
+                assertTrue(
+                                context.isFailed());
+
+                assertFalse(
+                                context.isRunning());
+
+                assertFalse(
+                                context.isFinished());
+        }
+
+        @Test
+        void shouldRejectNullGoal() {
+                NullPointerException exception = assertThrows(
+                                NullPointerException.class,
+                                () -> AgentContext.from(null));
+
+                assertEquals(
+                                "Goal must not be null",
+                                exception.getMessage());
+        }
+
+        @Test
+        void shouldRejectBlankGoal() {
+                IllegalArgumentException exception = assertThrows(
+                                IllegalArgumentException.class,
+                                () -> AgentContext.from("   "));
+
+                assertEquals(
+                                "Goal must not be blank",
+                                exception.getMessage());
+        }
+
+        @Test
+        void shouldRejectNullExecutionLog() {
+                AgentContext context = AgentContext.from(
+                                "测试目标");
+
+                NullPointerException exception = assertThrows(
+                                NullPointerException.class,
+                                () -> context.appendExecutionLog(
+                                                null));
+
+                assertEquals(
+                                "Execution log must not be null",
+                                exception.getMessage());
+        }
+
+        @Test
+        void shouldRejectBlankExecutionLog() {
+                AgentContext context = AgentContext.from(
+                                "测试目标");
+
+                IllegalArgumentException exception = assertThrows(
+                                IllegalArgumentException.class,
+                                () -> context.appendExecutionLog(
+                                                "   "));
+
+                assertEquals(
+                                "Execution log must not be blank",
+                                exception.getMessage());
+        }
+
+        @Test
+        void shouldRejectNullElementInExecutionLogs() {
+                List<String> logs = new ArrayList<>();
+
+                logs.add(
+                                "Reason completed");
+
+                logs.add(null);
+
+                NullPointerException exception = assertThrows(
+                                NullPointerException.class,
+                                () -> AgentContext.builder()
+                                                .goal("测试目标")
+                                                .executionLogs(logs)
+                                                .build());
+
+                assertEquals(
+                                "Execution log must not be null",
+                                exception.getMessage());
+        }
+
+        @Test
+        void shouldSupportEqualsAndHashCode() {
+                AgentContext first = AgentContext.builder()
+                                .goal("分析劳动合同")
+                                .reasonResult(
+                                                ReasonResult.from(
+                                                                "用户希望分析劳动合同"))
+                                .agentPlan(
+                                                AgentPlan.from(
+                                                                List.of(
+                                                                                AgentTask.pending(
+                                                                                                "task-1",
+                                                                                                "读取劳动合同"))))
+                                .status(
+                                                AgentStatus.RUNNING)
+                                .executionLogs(
+                                                List.of(
+                                                                "Reason completed",
+                                                                "Planning completed"))
+                                .build();
+
+                AgentContext second = AgentContext.builder()
+                                .goal("分析劳动合同")
+                                .reasonResult(
+                                                ReasonResult.from(
+                                                                "用户希望分析劳动合同"))
+                                .agentPlan(
+                                                AgentPlan.from(
+                                                                List.of(
+                                                                                AgentTask.pending(
+                                                                                                "task-1",
+                                                                                                "读取劳动合同"))))
+                                .status(
+                                                AgentStatus.RUNNING)
+                                .executionLogs(
+                                                List.of(
+                                                                "Reason completed",
+                                                                "Planning completed"))
+                                .build();
+
+                assertEquals(
+                                first,
+                                second);
+
+                assertEquals(
+                                first.hashCode(),
+                                second.hashCode());
+        }
 }

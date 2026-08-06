@@ -1,11 +1,19 @@
 package com.quince.lawyeraiassistant.prompt;
 
 /**
- * Prompt 资源路径。
+ * Prompt 资源路径常量。
  *
  * <p>
- * 当前仍作为兼容常量类保留。
- * Recovery Sprint 之后不再进行批量迁移。
+ * 所有正式 Prompt 统一放在：
+ * </p>
+ *
+ * <pre>
+ * src / main / resources / prompts
+ * </pre>
+ *
+ * <p>
+ * 业务代码不应该直接依赖这些路径，
+ * 路径主要由 PromptDefinition 和 PromptLoader 使用。
  * </p>
  */
 public final class PromptPaths {
@@ -16,9 +24,23 @@ public final class PromptPaths {
     public static final String LAWYER_SYSTEM = "classpath:prompts/system/lawyer-system.st";
 
     /**
-     * 案件分析教学/Playground Prompt。
+     * 案件分析教学或 Playground Prompt。
+     *
+     * <p>
+     * 当前不一定注册到正式 PromptRegistry。
+     * </p>
      */
     public static final String CASE_ANALYSIS = "classpath:prompts/legal/case-analysis.st";
+
+    /**
+     * Agent Reason Prompt。
+     */
+    public static final String AGENT_REASON = "classpath:prompts/agent/reason.st";
+
+    /**
+     * Agent Planning Prompt。
+     */
+    public static final String AGENT_PLANNING = "classpath:prompts/agent/planning.st";
 
     private PromptPaths() {
         throw new IllegalStateException(

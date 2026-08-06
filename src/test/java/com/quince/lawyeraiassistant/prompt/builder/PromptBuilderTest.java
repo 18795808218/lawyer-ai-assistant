@@ -26,7 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-class LegalPromptBuilderTest {
+class PromptBuilderTest {
 
     private PromptFactory promptFactory;
 
@@ -34,7 +34,7 @@ class LegalPromptBuilderTest {
 
     private KnowledgeFormatter knowledgeFormatter;
 
-    private LegalPromptBuilder legalPromptBuilder;
+    private PromptBuilder promptBuilder;
 
     @BeforeEach
     void setUp() {
@@ -44,7 +44,7 @@ class LegalPromptBuilderTest {
 
         knowledgeFormatter = new DefaultKnowledgeFormatter();
 
-        legalPromptBuilder = new LegalPromptBuilder(
+        promptBuilder = new PromptBuilder(
                 promptFactory,
                 templateRenderer,
                 knowledgeFormatter);
@@ -69,7 +69,7 @@ class LegalPromptBuilderTest {
                 "劳动合同到期是否需要补偿？",
                 List.of());
 
-        Prompt prompt = legalPromptBuilder.build(context);
+        Prompt prompt = promptBuilder.buildLegal(context);
 
         List<Message> messages = prompt.getInstructions();
 
@@ -118,7 +118,7 @@ class LegalPromptBuilderTest {
                 "违法解除劳动合同如何赔偿？",
                 List.of(document));
 
-        Prompt prompt = legalPromptBuilder.build(context);
+        Prompt prompt = promptBuilder.buildLegal(context);
 
         SystemMessage systemMessage = getSystemMessage(prompt);
 
@@ -164,7 +164,7 @@ class LegalPromptBuilderTest {
                 "劳动合同解除需要赔偿吗？",
                 List.of());
 
-        Prompt prompt = legalPromptBuilder.build(context);
+        Prompt prompt = promptBuilder.buildLegal(context);
 
         SystemMessage systemMessage = getSystemMessage(prompt);
 
@@ -210,7 +210,7 @@ class LegalPromptBuilderTest {
                         firstDocument,
                         secondDocument));
 
-        Prompt prompt = legalPromptBuilder.build(context);
+        Prompt prompt = promptBuilder.buildLegal(context);
 
         String content = getSystemMessage(prompt).getText();
 
@@ -233,7 +233,7 @@ class LegalPromptBuilderTest {
                 "未签劳动合同怎么办？",
                 List.of());
 
-        Prompt prompt = legalPromptBuilder.build(context);
+        Prompt prompt = promptBuilder.buildLegal(context);
 
         UserMessage userMessage = getUserMessage(prompt);
 
@@ -246,7 +246,7 @@ class LegalPromptBuilderTest {
     void shouldThrowExceptionWhenContextIsNull() {
         NullPointerException exception = assertThrows(
                 NullPointerException.class,
-                () -> legalPromptBuilder.build(null));
+                () -> promptBuilder.buildLegal(null));
 
         assertEquals(
                 "PromptContext must not be null",
@@ -261,7 +261,7 @@ class LegalPromptBuilderTest {
 
         IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
-                () -> legalPromptBuilder.build(context));
+                () -> promptBuilder.buildLegal(context));
 
         assertEquals(
                 "Prompt question must not be blank",
@@ -279,10 +279,10 @@ class LegalPromptBuilderTest {
 
         NullPointerException exception = assertThrows(
                 NullPointerException.class,
-                () -> legalPromptBuilder.build(context));
+                () -> promptBuilder.buildLegal(context));
 
         assertEquals(
-                "System PromptFragment must not be null",
+                "Lawyer System PromptFragment must not be null",
                 exception.getMessage());
     }
 
@@ -290,21 +290,21 @@ class LegalPromptBuilderTest {
     void shouldRejectNullConstructorDependencies() {
         assertThrows(
                 NullPointerException.class,
-                () -> new LegalPromptBuilder(
+                () -> new PromptBuilder(
                         null,
                         templateRenderer,
                         knowledgeFormatter));
 
         assertThrows(
                 NullPointerException.class,
-                () -> new LegalPromptBuilder(
+                () -> new PromptBuilder(
                         promptFactory,
                         null,
                         knowledgeFormatter));
 
         assertThrows(
                 NullPointerException.class,
-                () -> new LegalPromptBuilder(
+                () -> new PromptBuilder(
                         promptFactory,
                         templateRenderer,
                         null));

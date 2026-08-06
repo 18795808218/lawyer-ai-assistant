@@ -1,54 +1,169 @@
 package com.quince.lawyeraiassistant.agent.dto;
 
 import com.quince.lawyeraiassistant.agent.model.AgentContext;
+import com.quince.lawyeraiassistant.agent.model.AgentPlan;
 import com.quince.lawyeraiassistant.agent.model.AgentStatus;
+import com.quince.lawyeraiassistant.agent.model.AgentTask;
+import com.quince.lawyeraiassistant.agent.model.AgentTaskStatus;
+import com.quince.lawyeraiassistant.agent.model.ReasonResult;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class AgentResponseTest {
 
-    @Test
-    void shouldCreateResponseFromAgentContext() {
-        AgentContext context = AgentContext.builder()
-                .goal(
-                        "分析劳动合同")
-                .status(
-                        AgentStatus.RUNNING)
-                .executionLogs(
-                        List.of(
-                                "Reason completed",
-                                "Planning completed"))
-                .build();
+        @Test
+        void shouldCreateResponseFromCompleteAgentContext() {
+                AgentContext context = AgentContext.builder()
+                                .goal(
+                                                "分析劳动合同并生成律师意见书")
+                                .reasonResult(
+                                                ReasonResult.from(
+                                                                "用户希望分析劳动合同并生成律师意见书。"))
+                                .agentPlan(
+                                                AgentPlan.from(
+                                                                List.of(
+                                                                                AgentTask.pending(
+                                                                                                "task-1",
+                                                                                                "读取劳动合同"),
+                                                                                AgentTask.pending(
+                                                                                                "task-2",
+                                                                                                "识别法律风险"))))
+                                .status(
+                                                AgentStatus.RUNNING)
+                                .executionLogs(
+                                                List.of(
+                                                                "Reason completed",
+                                                                "Planning completed"))
+                                .build();
 
-        AgentResponse response = AgentResponse.from(context);
+                AgentResponse response = AgentResponse.from(
+                                context);
 
-        assertEquals(
-                "分析劳动合同",
-                response.goal());
+                assertEquals(
+                                "分析劳动合同并生成律师意见书",
+                                response.goal());
 
-        assertEquals(
-                AgentStatus.RUNNING,
-                response.status());
+                assertEquals(
+                                "用户希望分析劳动合同并生成律师意见书。",
+                                response.reasonSummary());
 
-        assertEquals(
-                List.of(
-                        "Reason completed",
-                        "Planning completed"),
-                response.executionLogs());
-    }
+                assertEquals(
+                                AgentStatus.RUNNING,
+                                response.status());
 
-    @Test
-    void shouldRejectNullContext() {
-        NullPointerException exception = assertThrows(
-                NullPointerException.class,
-                () -> AgentResponse.from(null));
+                assertEquals(
+                                2,
+                                response.plan()
+                                                .size());
 
-        assertEquals(
-                "AgentContext must not be null",
-                exception.getMessage());
-    }
+                AgentTaskResponse firstTask = response.plan()
+                                .get(0);
+
+                assertEquals(
+                                "task-1",
+                                firstTask.id());
+
+                assertEquals(
+                                "读取劳动合同",
+                                firstTask.description());
+
+                assertEquals(
+                                AgentTaskStatus.PENDING,
+                                firstTask.status());
+
+                assertEquals(
+                                List.of(
+                                                "Reason completed",
+                                                "Planning completed"),
+                                response.executionLogs());
+        }
+
+        @Test
+        void shouldReturnEmptyPlanWhenPlanningHasNotExecuted() {
+                AgentContext context = AgentContext.from(
+                                "分析劳动合同");
+
+                AgentResponse response = AgentResponse.from(
+                                context);
+
+                assertNull(
+                                response.reasonSummary());
+
+                assertTrue(
+                                response.plan()
+                                                .isEmpty());
+
+                assertEquals(
+                                AgentStatus.CREATED,
+                                response.status());
+        }
+
+        @Test
+        void shouldCreateDefensiveCopiesOfCollections() {
+                List<AgentTaskResponse> plan = new java.util.ArrayList<>();
+
+                plan.add(
+                                new AgentTaskResponse(
+                                                "task-1",
+                                                "读取劳动合同",
+                                                AgentTaskStatus.PENDING));
+
+                List<String> logs = new java.util.ArrayList<>();
+
+                logs.add(
+                                "Reason completed");
+
+                AgentResponse response = new AgentResponse(
+                                "分析劳动合同",
+                                "用户希望分析劳动合同。",
+                                plan,
+                                AgentStatus.RUNNING,
+                                logs);
+
+                plan.clear();
+                logs.clear();
+
+                assertEquals(
+                                1,
+                                response.plan()
+                                                .size());
+
+                assertEquals(
+                                List.of(
+                                                "Reason completed"),
+                                response.executionLogs());
+
+                assertThrows(
+                                UnsupportedOperationException.class,
+                                () -> response.plan()
+                                                .add(
+                                                                new AgentTaskResponse(
+                                                                                "task-2",
+                                                                                "分析风险",
+                                                                                AgentTaskStatus.PENDING)));
+
+                assertThrows(
+                                UnsupportedOperationException.class,
+                                () -> response.executionLogs()
+                                                .add(
+                                                                "Illegal log"));
+        }
+
+        @Test
+        void shouldRejectNullContext() {
+                NullPointerException exception = assertThrows(
+                                NullPointerException.class,
+                                () -> AgentResponse.from(
+                                                null));
+
+                assertEquals(
+                                "AgentContext must not be null",
+                                exception.getMessage());
+        }
 }

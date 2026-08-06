@@ -17,46 +17,63 @@ import java.util.Objects;
  */
 @Component
 @RequiredArgsConstructor
-public class DefaultPromptFactory implements PromptFactory {
+public class DefaultPromptFactory
+                implements PromptFactory {
 
-    private final PromptRegistry promptRegistry;
+        private final PromptRegistry promptRegistry;
 
-    /**
-     * 根据逻辑名称获取 Prompt。
-     *
-     * @param name Prompt 逻辑名称
-     * @return PromptFragment
-     */
-    @Override
-    public PromptFragment get(String name) {
-        validateName(name);
+        /**
+         * 根据逻辑名称获取 Prompt。
+         */
+        @Override
+        public PromptFragment get(
+                        String name) {
 
-        return promptRegistry.find(name);
-    }
+                validateName(name);
 
-    /**
-     * 获取律师助手系统 Prompt。
-     *
-     * @return 律师助手基础系统 Prompt
-     */
-    @Override
-    public PromptFragment lawyerSystem() {
-        return get(PromptDefinition.LAWYER_SYSTEM.getName());
-    }
-
-    /**
-     * 校验 Prompt 名称。
-     *
-     * @param name Prompt 名称
-     */
-    private void validateName(String name) {
-        Objects.requireNonNull(
-                name,
-                "Prompt name must not be null");
-
-        if (name.isBlank()) {
-            throw new IllegalArgumentException(
-                    "Prompt name must not be blank");
+                return promptRegistry.find(name);
         }
-    }
+
+        /**
+         * 获取律师助手系统 Prompt。
+         */
+        @Override
+        public PromptFragment lawyerSystem() {
+                return get(
+                                PromptDefinition.LAWYER_SYSTEM
+                                                .getName());
+        }
+
+        /**
+         * 获取 Agent Reason Prompt。
+         */
+        @Override
+        public PromptFragment agentReason() {
+                return get(
+                                PromptDefinition.AGENT_REASON
+                                                .getName());
+        }
+
+        /**
+         * 获取 Agent Planning Prompt。
+         */
+        @Override
+        public PromptFragment agentPlanning() {
+                return get(
+                                PromptDefinition.AGENT_PLANNING
+                                                .getName());
+        }
+
+        private void validateName(
+                        String name) {
+
+                Objects.requireNonNull(
+                                name,
+                                "Prompt name must not be null");
+
+                if (name.isBlank()) {
+                        throw new IllegalArgumentException(
+                                        "Prompt name must not be blank");
+                }
+        }
 }

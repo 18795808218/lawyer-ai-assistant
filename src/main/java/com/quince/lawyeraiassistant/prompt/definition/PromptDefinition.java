@@ -4,18 +4,48 @@ import com.quince.lawyeraiassistant.prompt.PromptNames;
 import com.quince.lawyeraiassistant.prompt.PromptPaths;
 
 /**
- * Prompt 元数据定义。
+ * 项目正式 Prompt 的统一元数据定义。
  *
- * 当前作为新的统一入口，
- * 内部仍复用 PromptNames / PromptPaths，
- * 保证 Recovery Sprint 期间不破坏现有代码。
+ * <p>
+ * 每个正式 Prompt 应在此处声明：
+ * </p>
+ *
+ * <ul>
+ * <li>逻辑名称</li>
+ * <li>classpath 资源位置</li>
+ * <li>版本</li>
+ * </ul>
+ *
+ * <p>
+ * PromptRegistryInitializer 会遍历本枚举，
+ * 自动加载并注册全部正式 Prompt。
+ * </p>
  */
 public enum PromptDefinition {
 
+    /**
+     * 法律问答系统 Prompt。
+     */
     LAWYER_SYSTEM(
             PromptNames.LAWYER_SYSTEM,
             PromptPaths.LAWYER_SYSTEM,
-            "v1");
+            "v1"),
+
+    /**
+     * Agent Reason 阶段 Prompt。
+     */
+    AGENT_REASON(
+            PromptNames.AGENT_REASON,
+            PromptPaths.AGENT_REASON,
+            "v1"),
+
+    /**
+     * Agent Planning 阶段 Prompt。
+     */
+    AGENT_PLANNING(
+        PromptNames.AGENT_PLANNING,
+        PromptPaths.AGENT_PLANNING,
+        "v1");
 
     private final String name;
 
@@ -27,6 +57,7 @@ public enum PromptDefinition {
             String name,
             String location,
             String version) {
+
         this.name = name;
         this.location = location;
         this.version = version;
