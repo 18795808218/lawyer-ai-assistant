@@ -26,6 +26,18 @@ class PromptRegistryInitializerTest {
         promptLoader = mock(PromptLoader.class);
         promptRegistry = mock(PromptRegistry.class);
 
+        for (PromptDefinition definition : PromptDefinition.values()) {
+            PromptFragment loadedFragment = PromptFragment.builder()
+                    .name(definition.getName())
+                    .content("content for " + definition.getName())
+                    .version(definition.getVersion())
+                    .source(definition.getLocation())
+                    .build();
+
+            when(promptLoader.load(definition.getLocation()))
+                    .thenReturn(loadedFragment);
+        }
+
         initializer = new PromptRegistryInitializer(
                 promptLoader,
                 promptRegistry);
