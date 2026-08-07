@@ -3,7 +3,7 @@ package com.quince.lawyeraiassistant.agent.controller;
 import com.quince.lawyeraiassistant.agent.dto.AgentRequest;
 import com.quince.lawyeraiassistant.agent.dto.AgentResponse;
 import com.quince.lawyeraiassistant.agent.model.AgentContext;
-import com.quince.lawyeraiassistant.agent.pipeline.AgentPipeline;
+import com.quince.lawyeraiassistant.agent.runtime.AgentRuntime;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -16,43 +16,48 @@ import java.util.Objects;
  * Agent Pipeline 开发诊断接口。
  *
  * <p>
- * 当前仅用于验证 AgentContext、AgentOperator 和
- * AgentPipeline 的基础执行流程。
+ * 用于验证 Agent Runtime 的完整执行流程，
+ * 包括 Reason、Planning、Action Selection、
+ * Tool Execution、Observation 和 Multi-step Execution。
  * </p>
  *
  * <p>
- * 当前仍使用 DummyReasonOperator 和 DummyPlanningOperator，
- * 不调用真实 LLM 或 Tool。
+ * 当前接口属于 Playground / Development API，
+ * 用于 Agent Runtime 开发和联调，
+ * 不作为最终业务 API。
  * </p>
  */
 @RestController
 @RequestMapping("/api/playground/agent")
 public class AgentPlaygroundController {
 
-    private final AgentPipeline agentPipeline;
+        private final AgentRuntime agentRuntime;
 
-    public AgentPlaygroundController(
-            AgentPipeline agentPipeline) {
-        this.agentPipeline = Objects.requireNonNull(
-                agentPipeline,
-                "agentPipeline must not be null");
-    }
+        public AgentPlaygroundController(
+                        AgentRuntime agentRuntime) {
 
-    /**
-     * 执行 Agent Pipeline。
-     *
-     * @param request Agent 请求
-     * @return Agent 最终执行状态
-     */
-    @PostMapping
-    public AgentResponse execute(
-            @Valid @RequestBody AgentRequest request) {
-        AgentContext initialContext = AgentContext.from(
-                request.goal());
+                this.agentRuntime = Objects.requireNonNull(
+                                agentRuntime,
+                                "agentRuntime must not be null");
+        }
 
-        AgentContext result = agentPipeline.execute(
-                initialContext);
+        /**
+         * 执行一次完整 Agent Runtime。
+         *
+         * @param request Agent 请求
+         * @return Agent 执行结果
+         */
+        @PostMapping
+        public AgentResponse run(
+                        @Valid @RequestBody AgentRequest request) {
 
-        return AgentResponse.from(result);
-    }
+                AgentContext initialContext = AgentContext.from(
+                                request.goal());
+
+                AgentContext result = agentRuntime.run(
+                                initialContext);
+
+                return AgentResponse.from(
+                                result);
+        }
 }

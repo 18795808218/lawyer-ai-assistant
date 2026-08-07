@@ -6,6 +6,8 @@ import com.quince.lawyeraiassistant.agent.model.AgentStatus;
 import com.quince.lawyeraiassistant.agent.model.AgentTask;
 import com.quince.lawyeraiassistant.agent.model.AgentTaskStatus;
 import com.quince.lawyeraiassistant.agent.model.ReasonResult;
+import com.quince.lawyeraiassistant.agent.model.ToolObservation;
+
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -34,6 +36,12 @@ class AgentResponseTest {
                                                                                 AgentTask.pending(
                                                                                                 "task-2",
                                                                                                 "识别法律风险"))))
+                                .observations(
+                                                List.of(
+                                                                ToolObservation.success(
+                                                                                "task-1",
+                                                                                "searchLegalKnowledge",
+                                                                                "检索到劳动合同法相关规定。")))
                                 .status(
                                                 AgentStatus.RUNNING)
                                 .executionLogs(
@@ -82,6 +90,31 @@ class AgentResponseTest {
                                                 "Reason completed",
                                                 "Planning completed"),
                                 response.executionLogs());
+                assertEquals(
+                                1,
+                                response.observations()
+                                                .size());
+
+                ToolObservationResponse observation = response.observations()
+                                .getFirst();
+
+                assertEquals(
+                                "task-1",
+                                observation.taskId());
+
+                assertEquals(
+                                "searchLegalKnowledge",
+                                observation.toolName());
+
+                assertTrue(
+                                observation.success());
+
+                assertEquals(
+                                "检索到劳动合同法相关规定。",
+                                observation.content());
+
+                assertNull(
+                                observation.errorMessage());
         }
 
         @Test
@@ -102,6 +135,9 @@ class AgentResponseTest {
                 assertEquals(
                                 AgentStatus.CREATED,
                                 response.status());
+                assertTrue(
+                                response.observations()
+                                                .isEmpty());
         }
 
         @Test
@@ -119,15 +155,42 @@ class AgentResponseTest {
                 logs.add(
                                 "Reason completed");
 
+                List<ToolObservationResponse> observations = new java.util.ArrayList<>();
+
+                observations.add(
+                                new ToolObservationResponse(
+                                                "task-1",
+                                                "searchLegalKnowledge",
+                                                true,
+                                                "检索结果",
+                                                null));
+
                 AgentResponse response = new AgentResponse(
                                 "分析劳动合同",
                                 "用户希望分析劳动合同。",
                                 plan,
+                                observations,
                                 AgentStatus.RUNNING,
                                 logs);
 
                 plan.clear();
                 logs.clear();
+
+                assertEquals(
+                                1,
+                                response.observations()
+                                                .size());
+
+                assertThrows(
+                                UnsupportedOperationException.class,
+                                () -> response.observations()
+                                                .add(
+                                                                new ToolObservationResponse(
+                                                                                "task-2",
+                                                                                "searchLegalKnowledge",
+                                                                                true,
+                                                                                "其他结果",
+                                                                                null)));
 
                 assertEquals(
                                 1,

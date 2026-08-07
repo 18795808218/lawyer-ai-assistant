@@ -12,6 +12,7 @@ import java.util.Objects;
  * @param goal          Agent 目标
  * @param reasonSummary Reason 阶段生成的目标理解摘要
  * @param plan          Planning 阶段生成的任务列表
+ * @param observations  Tool 执行阶段产生的 Observation
  * @param status        Agent 当前状态
  * @param executionLogs Agent 执行日志
  */
@@ -23,6 +24,8 @@ public record AgentResponse(
 
                 List<AgentTaskResponse> plan,
 
+                List<ToolObservationResponse> observations,
+
                 AgentStatus status,
 
                 List<String> executionLogs
@@ -30,6 +33,7 @@ public record AgentResponse(
 ) {
 
         public AgentResponse {
+
                 Objects.requireNonNull(
                                 goal,
                                 "goal must not be null");
@@ -41,6 +45,10 @@ public record AgentResponse(
                 plan = plan == null
                                 ? List.of()
                                 : List.copyOf(plan);
+
+                observations = observations == null
+                                ? List.of()
+                                : List.copyOf(observations);
 
                 executionLogs = executionLogs == null
                                 ? List.of()
@@ -66,10 +74,17 @@ public record AgentResponse(
                                                 AgentTaskResponse::from)
                                 .toList();
 
+                List<ToolObservationResponse> observations = context.getObservations()
+                                .stream()
+                                .map(
+                                                ToolObservationResponse::from)
+                                .toList();
+
                 return new AgentResponse(
                                 context.getGoal(),
                                 reasonSummary,
                                 plan,
+                                observations,
                                 context.getStatus(),
                                 context.getExecutionLogs());
         }

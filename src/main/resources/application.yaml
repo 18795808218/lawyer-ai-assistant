@@ -69,3 +69,7 @@ app:
 logging:
   level:
     com.quince.lawyeraiassistant.advisor.LoggingAdvisorV2: DEBUG
+
+agent:
+  runtime:
+    max-steps: 10

@@ -75,6 +75,15 @@ class AgentContextTest {
                 assertEquals(
                                 0,
                                 context.executionLogCount());
+                assertNotNull(
+                                context.getObservations());
+
+                assertFalse(
+                                context.hasObservations());
+
+                assertEquals(
+                                0,
+                                context.observationCount());
         }
 
         @Test
@@ -664,5 +673,180 @@ class AgentContextTest {
                 assertEquals(
                                 first.hashCode(),
                                 second.hashCode());
+        }
+
+        @Test
+        void shouldNormalizeNullObservationsToEmptyList() {
+
+                AgentContext context = AgentContext.builder()
+                                .goal("测试目标")
+                                .observations(null)
+                                .build();
+
+                assertNotNull(
+                                context.getObservations());
+
+                assertTrue(
+                                context.getObservations()
+                                                .isEmpty());
+
+                assertFalse(
+                                context.hasObservations());
+
+                assertEquals(
+                                0,
+                                context.observationCount());
+        }
+
+        @Test
+        void shouldAppendObservationWithoutModifyingOriginalContext() {
+
+                AgentContext originalContext = AgentContext.from(
+                                "分析劳动合同");
+
+                ToolObservation observation = ToolObservation.success(
+                                "task-1",
+                                "searchLegalKnowledge",
+                                "检索到劳动合同法相关规定");
+
+                AgentContext updatedContext = originalContext.appendObservation(
+                                observation);
+
+                assertNotSame(
+                                originalContext,
+                                updatedContext);
+
+                assertFalse(
+                                originalContext.hasObservations());
+
+                assertTrue(
+                                originalContext.getObservations()
+                                                .isEmpty());
+
+                assertTrue(
+                                updatedContext.hasObservations());
+
+                assertEquals(
+                                1,
+                                updatedContext.observationCount());
+
+                assertSame(
+                                observation,
+                                updatedContext.getObservations()
+                                                .getFirst());
+        }
+
+        @Test
+        void shouldPreserveExistingObservationsWhenAppending() {
+
+                ToolObservation firstObservation = ToolObservation.success(
+                                "task-1",
+                                "readDocument",
+                                "合同读取成功");
+
+                ToolObservation secondObservation = ToolObservation.success(
+                                "task-2",
+                                "searchLegalKnowledge",
+                                "法律检索成功");
+
+                AgentContext context = AgentContext.builder()
+                                .goal("分析劳动合同")
+                                .observations(
+                                                List.of(
+                                                                firstObservation))
+                                .build();
+
+                AgentContext result = context.appendObservation(
+                                secondObservation);
+
+                assertEquals(
+                                List.of(
+                                                firstObservation,
+                                                secondObservation),
+                                result.getObservations());
+        }
+
+        @Test
+        void shouldCreateDefensiveCopyOfObservations() {
+
+                List<ToolObservation> mutableObservations = new ArrayList<>();
+
+                mutableObservations.add(
+                                ToolObservation.success(
+                                                "task-1",
+                                                "readDocument",
+                                                "合同读取成功"));
+
+                AgentContext context = AgentContext.builder()
+                                .goal("分析劳动合同")
+                                .observations(
+                                                mutableObservations)
+                                .build();
+
+                mutableObservations.clear();
+
+                assertEquals(
+                                1,
+                                context.observationCount());
+        }
+
+        @Test
+        void shouldExposeUnmodifiableObservations() {
+
+                AgentContext context = AgentContext.builder()
+                                .goal("分析劳动合同")
+                                .observations(
+                                                List.of(
+                                                                ToolObservation.success(
+                                                                                "task-1",
+                                                                                "readDocument",
+                                                                                "合同读取成功")))
+                                .build();
+
+                assertThrows(
+                                UnsupportedOperationException.class,
+                                () -> context.getObservations()
+                                                .add(
+                                                                ToolObservation.success(
+                                                                                "task-2",
+                                                                                "searchLegalKnowledge",
+                                                                                "法律检索成功")));
+        }
+
+        @Test
+        void shouldRejectNullObservationWhenAppending() {
+
+                AgentContext context = AgentContext.from(
+                                "分析劳动合同");
+
+                NullPointerException exception = assertThrows(
+                                NullPointerException.class,
+                                () -> context.appendObservation(
+                                                null));
+
+                assertEquals(
+                                "ToolObservation must not be null",
+                                exception.getMessage());
+        }
+
+        @Test
+        void shouldRejectNullElementInObservations() {
+
+                List<ToolObservation> observations = new ArrayList<>();
+
+                observations.add(
+                                ToolObservation.success(
+                                                "task-1",
+                                                "readDocument",
+                                                "合同读取成功"));
+
+                observations.add(null);
+
+                assertThrows(
+                                NullPointerException.class,
+                                () -> AgentContext.builder()
+                                                .goal("分析劳动合同")
+                                                .observations(observations)
+                                                .build());
         }
 }

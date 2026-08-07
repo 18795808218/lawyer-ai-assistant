@@ -24,6 +24,7 @@ import java.util.Objects;
  * <li>goal：Agent 需要完成的目标</li>
  * <li>reasonResult：Reason 阶段产生的推理摘要结果</li>
  * <li>agentPlan：Planning 阶段产生的执行计划</li>
+ * <li>observations：Tool 执行产生的观察结果</li>
  * <li>status：Agent 当前执行状态</li>
  * <li>executionLogs：Agent 执行过程中的结构化日志摘要</li>
  * </ul>
@@ -62,6 +63,15 @@ public final class AgentContext {
         private final AgentPlan agentPlan;
 
         /**
+         * Tool 执行产生的 Observation。
+         *
+         * <p>
+         * 初始状态统一使用空集合，不使用 null。
+         * </p>
+         */
+        private final List<ToolObservation> observations;
+
+        /**
          * Agent 当前执行状态。
          */
         private final AgentStatus status;
@@ -70,7 +80,9 @@ public final class AgentContext {
          * Agent 执行日志。
          *
          * <p>
-         * 这里只保存结构化执行摘要，不保存模型完整思维过程。
+         * 这里只保存结构化执行摘要，
+         * 不保存 Tool 的业务返回结果。
+         * Tool 业务结果统一保存在 observations 中。
          * </p>
          */
         private final List<String> executionLogs;
@@ -80,16 +92,21 @@ public final class AgentContext {
                         String goal,
                         ReasonResult reasonResult,
                         AgentPlan agentPlan,
+                        List<ToolObservation> observations,
                         AgentStatus status,
                         List<String> executionLogs) {
 
-                this.goal = normalizeGoal(goal);
+                this.goal = normalizeGoal(
+                                goal);
 
                 this.reasonResult = reasonResult;
 
                 this.agentPlan = agentPlan == null
                                 ? AgentPlan.empty()
                                 : agentPlan;
+
+                this.observations = normalizeObservations(
+                                observations);
 
                 this.status = status == null
                                 ? AgentStatus.CREATED
@@ -110,6 +127,7 @@ public final class AgentContext {
          * <li>status = CREATED</li>
          * <li>reasonResult = null</li>
          * <li>agentPlan = empty plan</li>
+         * <li>observations = empty list</li>
          * <li>executionLogs = empty list</li>
          * </ul>
          *
@@ -154,13 +172,23 @@ public final class AgentContext {
 
         /**
          * 判断当前上下文是否已经包含有效执行计划。
-         *
-         * <p>
-         * AgentPlan 永远不为 null，因此这里通过是否包含 Task 判断。
-         * </p>
          */
         public boolean hasAgentPlan() {
                 return agentPlan.hasTasks();
+        }
+
+        /**
+         * 判断当前是否已经产生 Observation。
+         */
+        public boolean hasObservations() {
+                return !observations.isEmpty();
+        }
+
+        /**
+         * 返回 Observation 数量。
+         */
+        public int observationCount() {
+                return observations.size();
         }
 
         /**
@@ -179,9 +207,6 @@ public final class AgentContext {
 
         /**
          * 创建包含 ReasonResult 的新 AgentContext。
-         *
-         * @param reasonResult Reason 阶段结果
-         * @return 新 AgentContext
          */
         public AgentContext withReasonResult(
                         ReasonResult reasonResult) {
@@ -197,13 +222,6 @@ public final class AgentContext {
 
         /**
          * 创建包含 AgentPlan 的新 AgentContext。
-         *
-         * <p>
-         * 允许传入空计划，但不允许传入 null。
-         * </p>
-         *
-         * @param agentPlan Planning 阶段产生的执行计划
-         * @return 新 AgentContext
          */
         public AgentContext withAgentPlan(
                         AgentPlan agentPlan) {
@@ -218,10 +236,36 @@ public final class AgentContext {
         }
 
         /**
-         * 创建一个追加日志后的新 AgentContext。
+         * 创建追加 Observation 后的新 AgentContext。
          *
-         * @param executionLog 新执行日志
-         * @return 追加日志后的新 AgentContext
+         * <p>
+         * 原 AgentContext 不会被修改。
+         * </p>
+         *
+         * @param observation 新 Observation
+         * @return 新 AgentContext
+         */
+        public AgentContext appendObservation(
+                        ToolObservation observation) {
+
+                Objects.requireNonNull(
+                                observation,
+                                "ToolObservation must not be null");
+
+                List<ToolObservation> updatedObservations = new ArrayList<>(
+                                observations);
+
+                updatedObservations.add(
+                                observation);
+
+                return toBuilder()
+                                .observations(
+                                                updatedObservations)
+                                .build();
+        }
+
+        /**
+         * 创建一个追加日志后的新 AgentContext。
          */
         public AgentContext appendExecutionLog(
                         String executionLog) {
@@ -236,7 +280,8 @@ public final class AgentContext {
                                 normalizedLog);
 
                 return toBuilder()
-                                .executionLogs(updatedLogs)
+                                .executionLogs(
+                                                updatedLogs)
                                 .build();
         }
 
@@ -255,6 +300,28 @@ public final class AgentContext {
                 }
 
                 return normalizedGoal;
+        }
+
+        /**
+         * 规范化 Observation 集合。
+         *
+         * <p>
+         * null 转换为空集合；
+         * List.copyOf 创建不可修改快照，
+         * 同时拒绝集合中的 null 元素。
+         * </p>
+         */
+        private static List<ToolObservation> normalizeObservations(
+                        List<ToolObservation> observations) {
+
+                if (observations == null
+                                || observations.isEmpty()) {
+
+                        return List.of();
+                }
+
+                return List.copyOf(
+                                observations);
         }
 
         private static List<String> normalizeExecutionLogs(
